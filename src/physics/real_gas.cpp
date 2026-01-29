@@ -690,6 +690,7 @@ std::array<real,nspecies> RealGas<dim,nspecies,nstate,real>
     std::array<real,nspecies> Cv;
     for (int s=0; s<nspecies; ++s) 
     {
+        // this->pcout << "Temperature passed in:  " << temperature*this->temperature_ref << " the Cp obtained:  " << Cp[s] << std::endl << std::endl;
         Cv[s] = Cp[s] - this->Ru;
     }
 
@@ -741,14 +742,21 @@ std::array<real,nspecies> RealGas<dim,nspecies,nstate,real>
         }
 
         if(out_of_bounds_temp != -1.0) {
-            // this->pcout << "The calculated enthalpy at the bound temperature:  " << h[s] << std::endl;
-            h[s] += (out_of_bounds_temp - dimensional_temperature) * Cp;
+            // this->pcout << "The calculated enthalpy at the bound temperature:  " << h[s]*((this->Ru*dimensional_temperature)/(this->species_weight[s]*this->u_ref_sqr)) << std::endl;
+            h[s] = h[s]*(dimensional_temperature/out_of_bounds_temp) + ((out_of_bounds_temp - dimensional_temperature)/out_of_bounds_temp) * Cp;
             // this->pcout << "The out of bounds temps is:  " << out_of_bounds_temp << " and the bound temperature is:  " << dimensional_temperature
             //             << " with a Cp of:  " << Cp << std::endl;
-            // this->pcout << "The calculated enthalpy at the out of bounds temperature:  " << h[s] << std::endl;
+            // this->pcout << "The calculated enthalpy at the out of bounds temperature:  " << h[s]*((this->Ru*dimensional_temperature)/(this->species_weight[s]*this->u_ref_sqr)) << std::endl;
         }
-        h[s] *= ((this->Ru*dimensional_temperature)/(this->species_weight[s]*this->u_ref_sqr)); //nondimensional mass value
+        if(out_of_bounds_temp != -1.0)
+            h[s] *= ((this->Ru*out_of_bounds_temp)/(this->species_weight[s]*this->u_ref_sqr)); //nondimensional mass value
+        else
+            h[s] *= ((this->Ru*dimensional_temperature)/(this->species_weight[s]*this->u_ref_sqr)); //nondimensional mass value
         h[s] += species_enthalpy_offset[s];
+        // this->pcout << "The calculated enthalpy at the out of bounds temperature with the offset added:  " << h[s] << std::endl;
+        // set dimensional temp back to the out of bounds temp for the next species in the loop
+        if (out_of_bounds_temp != -1.0)
+            dimensional_temperature = out_of_bounds_temp;
     }
     return h;
 }
@@ -819,7 +827,7 @@ inline real RealGas<dim,nspecies,nstate,real>
         }
         // mixture Cv
         mixture_Cv = compute_mixture_from_species(mass_fractions,Cv)*this->R_ref; // dimensional value
-        // this->pcout << "mixture_Cv " << mixture_Cv << std::endl;
+        // this->pcout << "mixture_Cv " << mixture_Cv << std::endl << std::endl;
         // Newton-Raphson derivative function
         f_d = mixture_Cv;
 
@@ -831,11 +839,11 @@ inline real RealGas<dim,nspecies,nstate,real>
 
         // update T
         if(itr > 9.99999e6) {
-            // output temperature values for the last 10 iterations
-            // included this output so user can determine if the tolerance is the issue
-            this->pcout << "Nearing the max iterations...iteration #" << itr << " old temperature:  " << T_n 
-                        << " new temperature:  " << T_npo << std::endl;
-            // sleep(3);
+                // output temperature values for the last 10 iterations
+                // included this output so user can determine if the tolerance is the issue
+                this->pcout << "Nearing the max iterations...iteration #" << itr << " old temperature:  " << T_n 
+                            << " new temperature:  " << T_npo << std::endl;
+                this->pcout << " Mixture Cv:  " << mixture_Cv << std::endl << std::endl;
         }
         T_n = T_npo;
     }
