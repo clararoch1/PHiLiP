@@ -62,8 +62,7 @@ public:
 
      /// Computes the species entropy.
     std::array<real,nspecies> compute_species_entropy ( 
-                const real temperature, 
-                const std::array<real,nstate> &conservative_soln ) const;
+                const real temperature) const;
     
      /// Computes the species Gibbs function.
     std::array<real,nspecies> compute_species_gibbs_function (

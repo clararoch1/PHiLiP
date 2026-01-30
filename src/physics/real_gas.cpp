@@ -175,38 +175,40 @@ std::array<int,nspecies>  RealGas<dim, nspecies, nstate, real>
 template <int dim, int nspecies, int nstate, typename real>
 std::array<real,nspecies> RealGas<dim, nspecies, nstate, real>
 ::compute_species_entropy ( 
-    const real temperature,
-    const std::array<real,nstate> &conservative_soln ) const
+    const real temperature) const
 {
-    // const real dimensional_temperature = compute_dimensional_temperature(temperature);
+    const real dimensional_temperature = compute_dimensional_temperature(temperature);
+    // const std::array<real,nspecies> species_densities = compute_species_densities(conservative_soln);
     // const std::array<real,nspecies> Rs = compute_Rs(this->Ru);
-    // std::array<real,nspecies> species_entropy;
-    // std::array<int,nspecies> species_tempindex = GetNASACAP_TemperatureIndex(dimensional_temperature);
-    // /// species loop
-    // for (int s=0; s<nspecies; ++s) 
-    // { 
-    //     // main computation
-    //     species_entropy[s] = -this->NASACAPCoeffs[s][0][species_tempindex[s]]*pow(dimensional_temperature,-2)*0.5
-    //             -this->NASACAPCoeffs[s][1][species_tempindex[s]]*pow(dimensional_temperature,-1) 
-    //             +this->NASACAPCoeffs[s][2][species_tempindex[s]]*log(dimensional_temperature)
-    //             +this->NASACAPCoeffs[s][8][species_tempindex[s]];
-    //     for (int i=3; i<7; i++)
-    //     {
-    //         species_entropy[s] += this->NASACAPCoeffs[s][i][species_tempindex[s]]*pow(dimensional_temperature,i-2)/((double)(i-2)); // The other terms are added
-    //     }
-    //     species_entropy[s] *= Rs[s];
-    //     this->pcout << "species " << s << " entropy NASA: " << species_entropy[s] << std::endl;
-    // }
-    
     std::array<real,nspecies> species_entropy;
-    const std::array<real,nspecies> species_densities = compute_species_densities(conservative_soln);
-    const std::array<real,nspecies> Rs = compute_Rs(this->Ru);
-    std::array<real,nspecies> Cv = compute_species_specific_molar_Cv(temperature); // dimensional molar value
-    for (int ispecies=0; ispecies < nspecies; ++ispecies) {
-        Cv[ispecies] /= (this->species_weight[ispecies]*this->R_ref); // nondimensional mass value
-        species_entropy[ispecies] = Cv[ispecies]*log(temperature) - Rs[ispecies]*log(species_densities[ispecies]);
-        // this->pcout << "species " << ispecies << " entropy eqn: " << species_entropy[ispecies] << std::endl;
+    std::array<int,nspecies> species_tempindex = GetNASACAP_TemperatureIndex(dimensional_temperature);
+    /// species loop
+    for (int s=0; s<nspecies; ++s) 
+    { 
+        // main computation
+        species_entropy[s] = -this->NASACAPCoeffs[s][0][species_tempindex[s]]*pow(dimensional_temperature,-2)*0.5
+                -this->NASACAPCoeffs[s][1][species_tempindex[s]]*pow(dimensional_temperature,-1) 
+                +this->NASACAPCoeffs[s][2][species_tempindex[s]]*log(dimensional_temperature)
+                +this->NASACAPCoeffs[s][8][species_tempindex[s]];
+        for (int i=3; i<7; i++)
+        {
+            species_entropy[s] += this->NASACAPCoeffs[s][i][species_tempindex[s]]*pow(dimensional_temperature,double(i-2))/((double)(i-2)); // The other terms are added
+        }
+        species_entropy[s] /= (this->species_weight[s]*this->R_ref);
+        // species_entropy[s] -= Rs[s]*log(species_densities[s]);
+        // this->pcout << "species " << s << " entropy NASA: " << species_entropy[s] << std::endl;
+        // this->pcout << "R ln (rho_k) term " << Rs[s]*log(species_densities[s]) << std::endl;
     }
+    
+    // std::array<real,nspecies> species_entropy;
+    // const std::array<real,nspecies> species_densities = compute_species_densities(conservative_soln);
+    // const std::array<real,nspecies> Rs = compute_Rs(this->Ru);
+    // std::array<real,nspecies> Cv = compute_species_specific_molar_Cv(temperature); // dimensional molar value
+    // for (int ispecies=0; ispecies < nspecies; ++ispecies) {
+    //     Cv[ispecies] /= (this->species_weight[ispecies]*this->R_ref); // nondimensional mass value
+    //     species_entropy[ispecies] = Cv[ispecies]*log(temperature) - Rs[ispecies]*log(species_densities[ispecies]);
+    //     this->pcout << "species " << ispecies << " entropy eqn: " << species_entropy[ispecies] << std::endl;
+    // }
     return species_entropy;
 }
 
@@ -216,8 +218,13 @@ std::array<real,nspecies> RealGas<dim, nspecies, nstate, real>
     const std::array<real,nstate> &conservative_soln) const
 {
     const real temperature = compute_temperature(conservative_soln);
-    // const std::array<real,nspecies> species_enthalpy = compute_species_specific_enthalpy(temperature);
-    const std::array<real,nspecies> species_entropy = compute_species_entropy(temperature, conservative_soln);
+    const std::array<real,nspecies> species_densities = compute_species_densities(conservative_soln);
+    const std::array<real,nspecies> Rs = compute_Rs(this->Ru);
+    std::array<real,nspecies> species_entropy = compute_species_entropy(temperature);
+    for(int ispecies = 0; ispecies < nspecies; ispecies++) {
+        species_entropy[ispecies] -= Rs[ispecies]*log(species_densities[ispecies]);
+        // this->pcout << "species " << ispecies << " entropy NASA: " << species_entropy[ispecies] << std::endl;
+    }
     std::array<real,nspecies> species_Cp = compute_species_specific_molar_Cp(temperature);
 
     std::array<real, nspecies> species_gibbs;
@@ -284,18 +291,22 @@ std::array<real,nstate> RealGas<dim, nspecies, nstate, real>
     for(int ispecies = 0; ispecies < nth_species_idx; ++ispecies) {
         species_Cp[ispecies] /= (this->species_weight[ispecies]*this->R_ref);
         species_entropy[ispecies] = species_Cp[ispecies] - (species_gibbs[ispecies]/temperature);
+        // this->pcout << "mapped species " << ispecies << " entropy: " << species_entropy[ispecies] << std::endl;
     }
     species_Cp[nth_species_idx] /= (this->species_weight[nth_species_idx]*this->R_ref);
     species_entropy[nth_species_idx] = species_Cp[nth_species_idx] - (species_gibbs[nth_species_idx]/temperature);
+    // this->pcout << "mapped species " << nth_species_idx << " entropy: " << species_entropy[nth_species_idx] << std::endl;
     // this->pcout << "last species gibbs:  " << species_gibbs[nth_species_idx] << " entropy:  " << species_entropy[nth_species_idx] << std::endl;
 
     std::array<real,nspecies> species_density;
     const std::array<real,nspecies> Rs = compute_Rs(this->Ru);
-    std::array<real,nspecies> species_Cv = compute_species_specific_molar_Cv(temperature);
+    // std::array<real,nspecies> species_Cv = compute_species_specific_molar_Cv(temperature);
     conservative_var[0] = 0.0;
     for(int ispecies = 0; ispecies < nspecies; ++ispecies) {
-        species_Cv[ispecies] /= (this->species_weight[ispecies]*this->R_ref);
-        species_density[ispecies] = exp((1.0/Rs[ispecies])*(species_Cv[ispecies]*log(temperature) - species_entropy[ispecies]));
+        // species_Cv[ispecies] /= (this->species_weight[ispecies]*this->R_ref);
+        std::array<real,nspecies> entropy_nasa_data = compute_species_entropy(temperature);
+
+        species_density[ispecies] = exp((species_entropy[ispecies] - entropy_nasa_data[ispecies])/(-1.0*Rs[ispecies]));
         // this->pcout << "species " << ispecies << " density:  " << species_density[ispecies] << std::endl;
         conservative_var[0] += species_density[ispecies];
 
@@ -1209,6 +1220,7 @@ dealii::Vector<double> RealGas<dim,nspecies,nstate,real>::post_compute_derived_q
         // for(int istate = 0; istate < nstate; ++istate) {
         //     std::cout << "state " << istate << " conservative_soln var:  " << conservative_soln[istate] << "  converted from entropy vars:  " << cons_soln[istate] << std::endl;
         // }
+        // sleep(5);
     }
     if (computed_quantities.size()-1 != current_data_index) {
         this->pcout << " Did not assign a value to all the data. Missing " << computed_quantities.size() - current_data_index << " variables."
