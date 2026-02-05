@@ -427,7 +427,7 @@ void NavierStokes_RealGas<dim,nspecies,nstate,real>
     // Associated thermal boundary condition
     if(thermal_boundary_condition_type == thermal_boundary_condition_enum::isothermal) { 
         // isothermal boundary
-        primitive_boundary_values[nstate-1] = this->compute_pressure_from_density_temperature(primitive_boundary_values[0], isothermal_wall_temperature);
+        primitive_boundary_values[nstate-1] = this->compute_pressure_from_density_temperature(primitive_boundary_values[0], isothermal_wall_temperature,soln_int);
     } else if(thermal_boundary_condition_type == thermal_boundary_condition_enum::adiabatic) {
         // adiabatic boundary
         primitive_boundary_values[nstate-1] = primitive_interior_values[nstate-1];
