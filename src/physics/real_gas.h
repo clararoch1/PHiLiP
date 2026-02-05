@@ -167,6 +167,10 @@ protected:
     // Algorithm 3 (f_M3): Compute squared velocities from conservative_soln
     real compute_velocity_squared ( const std::array<real,nstate> &conservative_soln ) const;
 
+    /// Given primitive variables, returns velocities.
+    template<typename real2>
+    dealii::Tensor<1,dim,real2> extract_velocities_from_primitive ( const std::array<real2,nstate> &primitive_soln ) const;
+
     // Algorithm 4 (f_M4): Compute specific kinetic energy from conservative_soln
     real compute_specific_kinetic_energy ( const std::array<real,nstate> &conservative_soln ) const;
 
@@ -218,6 +222,10 @@ protected:
 public:
     // Algorithm 17 (f_M17): Compute mixture pressure from conservative_soln
     virtual real compute_mixture_pressure ( const std::array<real,nstate> &conservative_soln ) const;
+
+    /// Given density and temperature, returns NON-DIMENSIONALIZED pressure using free-stream non-dimensionalization
+    /** See the book I do like CFD, sec 4.14.2 */
+    real compute_pressure_from_density_temperature ( const real density, const real temperature, const std::array<real,nstate> &conservative_soln ) const;
 
 protected:
     // Algorithm 18 (f_M18): Compute mixture specific total enthalpy from conservative_soln

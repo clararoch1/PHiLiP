@@ -558,6 +558,16 @@ inline real RealGas<dim,nspecies,nstate,real>
     return vel2;
 }
 
+template <int dim, int nspecies, int nstate, typename real>
+template<typename real2>
+inline dealii::Tensor<1,dim,real2> RealGas<dim,nspecies,nstate,real>
+::extract_velocities_from_primitive ( const std::array<real2,nstate> &primitive_soln ) const
+{
+    dealii::Tensor<1,dim,real2> velocities;
+    for (int d=0; d<dim; d++) { velocities[d] = primitive_soln[1+d]; }
+    return velocities;
+}
+
 // Algorithm 4 (f_M4): Compute specific kinetic energy
 template <int dim, int nspecies, int nstate, typename real>
 inline real RealGas<dim,nspecies,nstate,real>
@@ -897,6 +907,15 @@ inline real RealGas<dim,nspecies,nstate,real>
     const real temperature = compute_temperature(conservative_soln);
     const real mixture_pressure = mixture_density*mixture_gas_constant*temperature/(this->gam_ref*this->mach_ref_sqr);
 
+    return mixture_pressure;
+}
+
+template <int dim, int nspecies, int nstate, typename real>
+inline real RealGas<dim,nspecies,nstate,real>
+::compute_pressure_from_density_temperature ( const real density, const real temperature, const std::array<real,nstate> &conservative_soln ) const
+{
+    const real mixture_gas_constant = compute_mixture_gas_constant(conservative_soln);
+    const real mixture_pressure = density*mixture_gas_constant*temperature/(this->gam_ref*this->mach_ref_sqr);
     return mixture_pressure;
 }
 
