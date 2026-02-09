@@ -159,8 +159,7 @@ public:
 /* MAIN FUNCTIONS */
 protected:
     // Algorithm 1 (f_M1): Compute mixture density from conservative_soln
-    template<typename real2>
-    real2 compute_mixture_density ( const std::array<real2,nstate> &conservative_soln ) const;
+    real compute_mixture_density ( const std::array<real,nstate> &conservative_soln ) const;
 
     // Algorithm 2 (f_M2): Compute velocities from conservative_soln 
     dealii::Tensor<1,dim,real> compute_velocities ( const std::array<real,nstate> &conservative_soln ) const;
@@ -169,8 +168,7 @@ protected:
     real compute_velocity_squared ( const std::array<real,nstate> &conservative_soln ) const;
 
     /// Given primitive variables, returns velocities.
-    template<typename real2>
-    dealii::Tensor<1,dim,real2> extract_velocities_from_primitive ( const std::array<real2,nstate> &primitive_soln ) const;
+    dealii::Tensor<1,dim,real> extract_velocities_from_primitive ( const std::array<real,nstate> &primitive_soln ) const;
 
     // Algorithm 4 (f_M4): Compute specific kinetic energy from conservative_soln
     real compute_specific_kinetic_energy ( const std::array<real,nstate> &conservative_soln ) const;

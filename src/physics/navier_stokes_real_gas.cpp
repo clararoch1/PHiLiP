@@ -3,6 +3,8 @@
 #include <complex> // for the jacobian
 #include <boost/preprocessor/seq/for_each.hpp>
 
+#include "ADTypes.hpp"
+
 #include "physics.h"
 #include "real_gas.h"
 #include "navier_stokes_real_gas.h"
@@ -37,20 +39,20 @@ NavierStokes_RealGas <dim, nspecies, nstate, real>::NavierStokes_RealGas (
 }
 
 template <int dim, int nspecies, int nstate, typename real>
-std::array<dealii::Tensor<1,dim,double>,nstate> NavierStokes_RealGas<dim,nspecies,nstate,real>
+std::array<dealii::Tensor<1,dim,real>,nstate> NavierStokes_RealGas<dim,nspecies,nstate,real>
 ::convert_conservative_gradient_to_primitive_gradient (
-    const std::array<double,nstate> &conservative_soln,
-    const std::array<dealii::Tensor<1,dim,double>,nstate> &conservative_soln_gradient) const
+    const std::array<real,nstate> &conservative_soln,
+    const std::array<dealii::Tensor<1,dim,real>,nstate> &conservative_soln_gradient) const
 {
     // conservative_soln_gradient is solution_gradient
-    std::array<dealii::Tensor<1,dim,double>,nstate> primitive_soln_gradient;
+    std::array<dealii::Tensor<1,dim,real>,nstate> primitive_soln_gradient;
 
     // get primitive solution
-    const std::array<double,nstate> primitive_soln = this->template convert_conservative_to_primitive(conservative_soln); // from Euler
+    const std::array<real,nstate> primitive_soln = this->template convert_conservative_to_primitive(conservative_soln); // from Euler
 
     // extract from primitive solution
-    const double density = primitive_soln[0];
-    const dealii::Tensor<1,dim,double> vel = this->template extract_velocities_from_primitive(primitive_soln); // from Euler
+    const real density = primitive_soln[0];
+    const dealii::Tensor<1,dim,real> vel = this->template extract_velocities_from_primitive(primitive_soln); // from Euler
 
      // mixture density gradient
     for (int d=0; d<dim; d++) {
@@ -94,15 +96,15 @@ std::array<dealii::Tensor<1,dim,double>,nstate> NavierStokes_RealGas<dim,nspecie
 }
 
 template <int dim, int nspecies, int nstate, typename real>
-dealii::Tensor<1,dim,double> NavierStokes_RealGas<dim,nspecies,nstate,real>
+dealii::Tensor<1,dim,real> NavierStokes_RealGas<dim,nspecies,nstate,real>
 ::compute_temperature_gradient (
-    const std::array<double,nstate> &primitive_soln,
-    const std::array<dealii::Tensor<1,dim,double>,nstate> &primitive_soln_gradient) const
+    const std::array<real,nstate> &primitive_soln,
+    const std::array<dealii::Tensor<1,dim,real>,nstate> &primitive_soln_gradient) const
 {
-    const double density = primitive_soln[0];
-    const double temperature = this->template compute_temperature(primitive_soln); // from Euler
+    const real density = primitive_soln[0];
+    const real temperature = this->template compute_temperature(primitive_soln); // from Euler
 
-    dealii::Tensor<1,dim,double> temperature_gradient;
+    dealii::Tensor<1,dim,real> temperature_gradient;
     for (int d=0; d<dim; d++) {
         temperature_gradient[d] = (this->gam_ref*this->mach_ref_sqr*primitive_soln_gradient[dim+1][d] - temperature*primitive_soln_gradient[0][d])/density;
     }
@@ -110,11 +112,11 @@ dealii::Tensor<1,dim,double> NavierStokes_RealGas<dim,nspecies,nstate,real>
 }
 
 template <int dim, int nspecies, int nstate, typename real>
-inline double NavierStokes_RealGas<dim,nspecies,nstate,real>
-::compute_viscosity_coefficient (const std::array<double,nstate> &primitive_soln) const
+inline real NavierStokes_RealGas<dim,nspecies,nstate,real>
+::compute_viscosity_coefficient (const std::array<real,nstate> &primitive_soln) const
 {   
     // Use either Sutherland's law or constant viscosity
-    double viscosity_coefficient;
+    real viscosity_coefficient;
     if(use_constant_viscosity){
         viscosity_coefficient = 1.0*constant_viscosity;
     } else {
@@ -125,8 +127,8 @@ inline double NavierStokes_RealGas<dim,nspecies,nstate,real>
 }
 
 template <int dim, int nspecies, int nstate, typename real>
-inline double NavierStokes_RealGas<dim,nspecies,nstate,real>
-::compute_viscosity_coefficient_sutherlands_law (const std::array<double,nstate> &primitive_soln) const
+inline real NavierStokes_RealGas<dim,nspecies,nstate,real>
+::compute_viscosity_coefficient_sutherlands_law (const std::array<real,nstate> &primitive_soln) const
 {
     /* Nondimensionalized viscosity coefficient, \mu^{*}
      * Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.14.16)
@@ -135,90 +137,90 @@ inline double NavierStokes_RealGas<dim,nspecies,nstate,real>
      * * Reference: Sutherland, W. (1893), "The viscosity of gases and molecular force", Philosophical Magazine, S. 5, 36, pp. 507-531 (1893)
      * * Values: https://www.cfd-online.com/Wiki/Sutherland%27s_law
      */
-    const double temperature = this->template compute_temperature(primitive_soln); // from Euler
+    const real temperature = this->template compute_temperature(primitive_soln); // from Euler
 
-    const double viscosity_coefficient = ((1.0 + temperature_ratio)/(temperature + temperature_ratio))*pow(temperature,1.5);
+    const real viscosity_coefficient = ((1.0 + temperature_ratio)/(temperature + temperature_ratio))*pow(temperature,1.5);
     
     return viscosity_coefficient;
 }
 
 template <int dim, int nspecies, int nstate, typename real>
-inline double NavierStokes_RealGas<dim,nspecies,nstate,real>
-::scale_viscosity_coefficient (const double viscosity_coefficient) const
+inline real NavierStokes_RealGas<dim,nspecies,nstate,real>
+::scale_viscosity_coefficient (const real viscosity_coefficient) const
 {
     /* Scaled nondimensionalized viscosity coefficient, $\hat{\mu}^{*}$
      * Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.14.14)
      */
-    const double scaled_viscosity_coefficient = viscosity_coefficient/reynolds_number_inf;
+    const real scaled_viscosity_coefficient = viscosity_coefficient/reynolds_number_inf;
     
     return scaled_viscosity_coefficient;
 }
 
 template <int dim, int nspecies, int nstate, typename real>
-inline double NavierStokes_RealGas<dim,nspecies,nstate,real>
-::compute_scaled_viscosity_coefficient (const std::array<double,nstate> &primitive_soln) const
+inline real NavierStokes_RealGas<dim,nspecies,nstate,real>
+::compute_scaled_viscosity_coefficient (const std::array<real,nstate> &primitive_soln) const
 {
     /* Scaled nondimensionalized viscosity coefficient, $\hat{\mu}^{*}$
      * Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.14.14)
      */
-    const double viscosity_coefficient = compute_viscosity_coefficient(primitive_soln);
-    const double scaled_viscosity_coefficient = scale_viscosity_coefficient(viscosity_coefficient);
+    const real viscosity_coefficient = compute_viscosity_coefficient(primitive_soln);
+    const real scaled_viscosity_coefficient = scale_viscosity_coefficient(viscosity_coefficient);
 
     return scaled_viscosity_coefficient;
 }
 
 template <int dim, int nspecies, int nstate, typename real>
-inline double NavierStokes_RealGas<dim,nspecies,nstate,real>
-::compute_scaled_heat_conductivity_given_scaled_viscosity_coefficient_and_prandtl_number (const double scaled_viscosity_coefficient, const double prandtl_number_input) const
+inline real NavierStokes_RealGas<dim,nspecies,nstate,real>
+::compute_scaled_heat_conductivity_given_scaled_viscosity_coefficient_and_prandtl_number (const real scaled_viscosity_coefficient, const real prandtl_number_input) const
 {
     /* Scaled nondimensionalized heat conductivity, $\hat{\kappa}^{*}$, given the scaled viscosity coefficient
      * Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.14.13)
      */
-    const double scaled_heat_conductivity = scaled_viscosity_coefficient/(this->gamm1*this->mach_ref_sqr*prandtl_number_input);
+    const real scaled_heat_conductivity = scaled_viscosity_coefficient/(this->gamm1*this->mach_ref_sqr*prandtl_number_input);
     
     return scaled_heat_conductivity;
 }
 
 template <int dim, int nspecies, int nstate, typename real>
-inline double NavierStokes_RealGas<dim,nspecies,nstate,real>
-::compute_scaled_heat_conductivity (const std::array<double,nstate> &primitive_soln) const
+inline real NavierStokes_RealGas<dim,nspecies,nstate,real>
+::compute_scaled_heat_conductivity (const std::array<real,nstate> &primitive_soln) const
 {
     /* Scaled nondimensionalized heat conductivity, $\hat{\kappa}^{*}$
      * Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.14.13)
      */
-    const double scaled_viscosity_coefficient = compute_scaled_viscosity_coefficient(primitive_soln);
+    const real scaled_viscosity_coefficient = compute_scaled_viscosity_coefficient(primitive_soln);
 
-    const double scaled_heat_conductivity = compute_scaled_heat_conductivity_given_scaled_viscosity_coefficient_and_prandtl_number(scaled_viscosity_coefficient,prandtl_number);
+    const real scaled_heat_conductivity = compute_scaled_heat_conductivity_given_scaled_viscosity_coefficient_and_prandtl_number(scaled_viscosity_coefficient,prandtl_number);
     
     return scaled_heat_conductivity;
 }
 
 template <int dim, int nspecies, int nstate, typename real>
-dealii::Tensor<1,dim,double> NavierStokes_RealGas<dim,nspecies,nstate,real>
+dealii::Tensor<1,dim,real> NavierStokes_RealGas<dim,nspecies,nstate,real>
 ::compute_heat_flux (
-    const std::array<double,nstate> &primitive_soln,
-    const std::array<dealii::Tensor<1,dim,double>,nstate> &primitive_soln_gradient) const
+    const std::array<real,nstate> &primitive_soln,
+    const std::array<dealii::Tensor<1,dim,real>,nstate> &primitive_soln_gradient) const
 {
     /* Nondimensionalized heat flux, $\bm{q}^{*}$
      * Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.14.13)
      */
-    const double scaled_heat_conductivity = compute_scaled_heat_conductivity(primitive_soln);
-    const dealii::Tensor<1,dim,double> temperature_gradient = compute_temperature_gradient(primitive_soln, primitive_soln_gradient);
+    const real scaled_heat_conductivity = compute_scaled_heat_conductivity(primitive_soln);
+    const dealii::Tensor<1,dim,real> temperature_gradient = compute_temperature_gradient(primitive_soln, primitive_soln_gradient);
     // Compute the heat flux
-    const dealii::Tensor<1,dim,double> heat_flux = compute_heat_flux_given_scaled_heat_conductivity_and_temperature_gradient(scaled_heat_conductivity,temperature_gradient);
+    const dealii::Tensor<1,dim,real> heat_flux = compute_heat_flux_given_scaled_heat_conductivity_and_temperature_gradient(scaled_heat_conductivity,temperature_gradient);
     return heat_flux;
 }
 
 template <int dim, int nspecies, int nstate, typename real>
-dealii::Tensor<1,dim,double> NavierStokes_RealGas<dim,nspecies,nstate,real>
+dealii::Tensor<1,dim,real> NavierStokes_RealGas<dim,nspecies,nstate,real>
 ::compute_heat_flux_given_scaled_heat_conductivity_and_temperature_gradient (
-    const double scaled_heat_conductivity,
-    const dealii::Tensor<1,dim,double> &temperature_gradient) const
+    const real scaled_heat_conductivity,
+    const dealii::Tensor<1,dim,real> &temperature_gradient) const
 {
     /* Nondimensionalized heat flux, $\bm{q}^{*}$
      * Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.14.13)
      */
-    dealii::Tensor<1,dim,double> heat_flux;
+    dealii::Tensor<1,dim,real> heat_flux;
     for (int d=0; d<dim; d++) {
         heat_flux[d] = -scaled_heat_conductivity*temperature_gradient[d];
     }
@@ -240,11 +242,11 @@ real NavierStokes_RealGas<dim,nspecies,nstate,real>
 }
 
 template <int dim, int nspecies, int nstate, typename real>
-dealii::Tensor<2,dim,double> NavierStokes_RealGas<dim,nspecies,nstate,real>
+dealii::Tensor<2,dim,real> NavierStokes_RealGas<dim,nspecies,nstate,real>
 ::extract_velocities_gradient_from_primitive_solution_gradient (
-    const std::array<dealii::Tensor<1,dim,double>,nstate> &primitive_soln_gradient) const
+    const std::array<dealii::Tensor<1,dim,real>,nstate> &primitive_soln_gradient) const
 {
-    dealii::Tensor<2,dim,double> velocities_gradient;
+    dealii::Tensor<2,dim,real> velocities_gradient;
     for (int d1=0; d1<dim; d1++) {
         for (int d2=0; d2<dim; d2++) {
             velocities_gradient[d1][d2] = primitive_soln_gradient[1+d1][d2];
@@ -254,12 +256,12 @@ dealii::Tensor<2,dim,double> NavierStokes_RealGas<dim,nspecies,nstate,real>
 }
 
 template <int dim, int nspecies, int nstate, typename real>
-dealii::Tensor<2,dim,double> NavierStokes_RealGas<dim,nspecies,nstate,real>
+dealii::Tensor<2,dim,real> NavierStokes_RealGas<dim,nspecies,nstate,real>
 ::compute_strain_rate_tensor (
-    const dealii::Tensor<2,dim,double> &vel_gradient) const
+    const dealii::Tensor<2,dim,real> &vel_gradient) const
 { 
     // Strain rate tensor, S_{i,j}
-    dealii::Tensor<2,dim,double> strain_rate_tensor;
+    dealii::Tensor<2,dim,real> strain_rate_tensor;
     for (int d1=0; d1<dim; d1++) {
         for (int d2=0; d2<dim; d2++) {
             // rate of strain (deformation) tensor:
@@ -288,10 +290,10 @@ real NavierStokes_RealGas<dim,nspecies,nstate,real>
 }
 
 template <int dim, int nspecies, int nstate, typename real>
-dealii::Tensor<2,dim,double> NavierStokes_RealGas<dim,nspecies,nstate,real>
+dealii::Tensor<2,dim,real> NavierStokes_RealGas<dim,nspecies,nstate,real>
 ::compute_viscous_stress_tensor_via_scaled_viscosity_and_strain_rate_tensor (
-    const double scaled_viscosity_coefficient,
-    const dealii::Tensor<2,dim,double> &strain_rate_tensor) const
+    const real scaled_viscosity_coefficient,
+    const dealii::Tensor<2,dim,real> &strain_rate_tensor) const
 {
     /* Nondimensionalized viscous stress tensor, $\bm{\tau}^{*}$ 
      * Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.14.12)
@@ -299,8 +301,8 @@ dealii::Tensor<2,dim,double> NavierStokes_RealGas<dim,nspecies,nstate,real>
 
     // Divergence of velocity
     // -- Initialize
-    double vel_divergence; // complex initializes it as 0+0i
-    if(std::is_same<double,real>::value){ 
+    real vel_divergence; // complex initializes it as 0+0i
+    if(std::is_same<real,real>::value){ 
         vel_divergence = 0.0;
     }
     // -- Obtain from trace of strain rate tensor
@@ -309,8 +311,8 @@ dealii::Tensor<2,dim,double> NavierStokes_RealGas<dim,nspecies,nstate,real>
     }
 
     // Viscous stress tensor, \tau_{i,j}
-    dealii::Tensor<2,dim,double> viscous_stress_tensor;
-    const double scaled_2nd_viscosity_coefficient = (-2.0/3.0)*scaled_viscosity_coefficient; // Stokes' hypothesis
+    dealii::Tensor<2,dim,real> viscous_stress_tensor;
+    const real scaled_2nd_viscosity_coefficient = (-2.0/3.0)*scaled_viscosity_coefficient; // Stokes' hypothesis
     for (int d1=0; d1<dim; d1++) {
         for (int d2=0; d2<dim; d2++) {
             viscous_stress_tensor[d1][d2] = 2.0*scaled_viscosity_coefficient*strain_rate_tensor[d1][d2];
@@ -321,20 +323,20 @@ dealii::Tensor<2,dim,double> NavierStokes_RealGas<dim,nspecies,nstate,real>
 }
 
 template <int dim, int nspecies, int nstate, typename real>
-dealii::Tensor<2,dim,double> NavierStokes_RealGas<dim,nspecies,nstate,real>
+dealii::Tensor<2,dim,real> NavierStokes_RealGas<dim,nspecies,nstate,real>
 ::compute_viscous_stress_tensor (
-    const std::array<double,nstate> &primitive_soln,
-    const std::array<dealii::Tensor<1,dim,double>,nstate> &primitive_soln_gradient) const
+    const std::array<real,nstate> &primitive_soln,
+    const std::array<dealii::Tensor<1,dim,real>,nstate> &primitive_soln_gradient) const
 {
     /* Nondimensionalized viscous stress tensor, $\bm{\tau}^{*}$ 
      * Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.14.12)
      */
-    const dealii::Tensor<2,dim,double> vel_gradient = extract_velocities_gradient_from_primitive_solution_gradient(primitive_soln_gradient);
-    const dealii::Tensor<2,dim,double> strain_rate_tensor = compute_strain_rate_tensor(vel_gradient);
-    const double scaled_viscosity_coefficient = compute_scaled_viscosity_coefficient(primitive_soln);
+    const dealii::Tensor<2,dim,real> vel_gradient = extract_velocities_gradient_from_primitive_solution_gradient(primitive_soln_gradient);
+    const dealii::Tensor<2,dim,real> strain_rate_tensor = compute_strain_rate_tensor(vel_gradient);
+    const real scaled_viscosity_coefficient = compute_scaled_viscosity_coefficient(primitive_soln);
 
     // Viscous stress tensor, \tau_{i,j}
-    const dealii::Tensor<2,dim,double> viscous_stress_tensor 
+    const dealii::Tensor<2,dim,real> viscous_stress_tensor 
         = compute_viscous_stress_tensor_via_scaled_viscosity_and_strain_rate_tensor(scaled_viscosity_coefficient,strain_rate_tensor);
 
     return viscous_stress_tensor;
@@ -355,37 +357,37 @@ std::array<dealii::Tensor<1,dim,real>,nstate> NavierStokes_RealGas<dim,nspecies,
 }
 
 template <int dim, int nspecies, int nstate, typename real>
-std::array<dealii::Tensor<1,dim,double>,nstate> NavierStokes_RealGas<dim,nspecies,nstate,real>
+std::array<dealii::Tensor<1,dim,real>,nstate> NavierStokes_RealGas<dim,nspecies,nstate,real>
 ::dissipative_flux_templated (
-    const std::array<double,nstate> &conservative_soln,
-    const std::array<dealii::Tensor<1,dim,double>,nstate> &solution_gradient) const
+    const std::array<real,nstate> &conservative_soln,
+    const std::array<dealii::Tensor<1,dim,real>,nstate> &solution_gradient) const
 {
     /* Nondimensionalized viscous flux (i.e. dissipative flux)
      * Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.12.1-4.12.4)
      */
 
     // Step 1: Primitive solution
-    const std::array<double,nstate> primitive_soln = this->template convert_conservative_to_primitive(conservative_soln); // from Euler
+    const std::array<real,nstate> primitive_soln = this->template convert_conservative_to_primitive(conservative_soln); // from Euler
     
     // Step 2: Gradient of primitive solution
-    const std::array<dealii::Tensor<1,dim,double>,nstate> primitive_soln_gradient = convert_conservative_gradient_to_primitive_gradient(conservative_soln, solution_gradient);
+    const std::array<dealii::Tensor<1,dim,real>,nstate> primitive_soln_gradient = convert_conservative_gradient_to_primitive_gradient(conservative_soln, solution_gradient);
     
     // Step 3: Viscous stress tensor, Velocities, Heat flux
-    const dealii::Tensor<2,dim,double> viscous_stress_tensor = compute_viscous_stress_tensor(primitive_soln, primitive_soln_gradient);
-    const dealii::Tensor<1,dim,double> vel = this->template extract_velocities_from_primitive(primitive_soln); // from Euler
-    const dealii::Tensor<1,dim,double> heat_flux = compute_heat_flux(primitive_soln, primitive_soln_gradient);
+    const dealii::Tensor<2,dim,real> viscous_stress_tensor = compute_viscous_stress_tensor(primitive_soln, primitive_soln_gradient);
+    const dealii::Tensor<1,dim,real> vel = this->template extract_velocities_from_primitive(primitive_soln); // from Euler
+    const dealii::Tensor<1,dim,real> heat_flux = compute_heat_flux(primitive_soln, primitive_soln_gradient);
 
     // Step 4: Construct viscous flux; Note: sign corresponds to LHS
-    const std::array<dealii::Tensor<1,dim,double>,nstate> viscous_flux = dissipative_flux_given_velocities_viscous_stress_tensor_and_heat_flux(vel,viscous_stress_tensor,heat_flux);
+    const std::array<dealii::Tensor<1,dim,real>,nstate> viscous_flux = dissipative_flux_given_velocities_viscous_stress_tensor_and_heat_flux(vel,viscous_stress_tensor,heat_flux);
     return viscous_flux;
 }
 
 template <int dim, int nspecies, int nstate, typename real>
-std::array<dealii::Tensor<1,dim,double>,nstate> NavierStokes_RealGas<dim,nspecies,nstate,real>
+std::array<dealii::Tensor<1,dim,real>,nstate> NavierStokes_RealGas<dim,nspecies,nstate,real>
 ::dissipative_flux_given_velocities_viscous_stress_tensor_and_heat_flux (
-    const dealii::Tensor<1,dim,double> &vel,
-    const dealii::Tensor<2,dim,double> &viscous_stress_tensor,
-    const dealii::Tensor<1,dim,double> &heat_flux) const
+    const dealii::Tensor<1,dim,real> &vel,
+    const dealii::Tensor<2,dim,real> &viscous_stress_tensor,
+    const dealii::Tensor<1,dim,real> &heat_flux) const
 {
     /* Nondimensionalized viscous flux (i.e. dissipative flux)
      * Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.12.1-4.12.4)
@@ -394,7 +396,7 @@ std::array<dealii::Tensor<1,dim,double>,nstate> NavierStokes_RealGas<dim,nspecie
     /* Construct viscous flux given velocities, viscous stress tensor,
      * and heat flux; Note: sign corresponds to LHS
      */
-    std::array<dealii::Tensor<1,dim,double>,nstate> viscous_flux;
+    std::array<dealii::Tensor<1,dim,real>,nstate> viscous_flux;
     for (int flux_dim=0; flux_dim<dim; ++flux_dim) {
         // Density equation
         viscous_flux[0][flux_dim] = 0.0;
@@ -465,5 +467,9 @@ void NavierStokes_RealGas<dim,nspecies,nstate,real>
 
 
 template class NavierStokes_RealGas < PHILIP_DIM, PHILIP_SPECIES, PHILIP_DIM+PHILIP_SPECIES+1, double >;
+template class NavierStokes_RealGas < PHILIP_DIM, PHILIP_SPECIES, PHILIP_DIM+PHILIP_SPECIES+1, FadType >;
+template class NavierStokes_RealGas < PHILIP_DIM, PHILIP_SPECIES, PHILIP_DIM+PHILIP_SPECIES+1, RadType >;
+template class NavierStokes_RealGas < PHILIP_DIM, PHILIP_SPECIES, PHILIP_DIM+PHILIP_SPECIES+1, FadFadType >;
+template class NavierStokes_RealGas < PHILIP_DIM, PHILIP_SPECIES, PHILIP_DIM+PHILIP_SPECIES+1, RadFadType >;
 } // Physics namespace
 } // PHiLiP namespace

@@ -1,5 +1,5 @@
-#ifndef __NAVIER_STOKES__
-#define __NAVIER_STOKES__
+#ifndef __NAVIER_STOKES_REAL_GAS__
+#define __NAVIER_STOKES_REAL_GAS__
 
 #include "real_gas.h"
 #include "parameters/parameters_navier_stokes.h"
@@ -64,22 +64,22 @@ protected:
 public:
 
     /** Obtain gradient of primitive variables from gradient of conservative variables */
-    std::array<dealii::Tensor<1,dim,double>,nstate> 
+    std::array<dealii::Tensor<1,dim,real>,nstate> 
     convert_conservative_gradient_to_primitive_gradient (
-        const std::array<double,nstate> &conservative_soln,
-        const std::array<dealii::Tensor<1,dim,double>,nstate> &conservative_soln_gradient) const;
+        const std::array<real,nstate> &conservative_soln,
+        const std::array<dealii::Tensor<1,dim,real>,nstate> &conservative_soln_gradient) const;
 
     /** Nondimensionalized temperature gradient */
-    dealii::Tensor<1,dim,double> compute_temperature_gradient (
-        const std::array<double,nstate> &primitive_soln,
-        const std::array<dealii::Tensor<1,dim,double>,nstate> &primitive_soln_gradient) const;
+    dealii::Tensor<1,dim,real> compute_temperature_gradient (
+        const std::array<real,nstate> &primitive_soln,
+        const std::array<dealii::Tensor<1,dim,real>,nstate> &primitive_soln_gradient) const;
 
     /** Nondimensionalized viscosity coefficient, mu*
      *  Based on the use_constant_viscosity flag, it returns a value based on either:
      *  (1) Sutherland's viscosity law, or
      *  (2) Constant nondimensionalized viscosity value
      */
-    double compute_viscosity_coefficient (const std::array<double,nstate> &primitive_soln) const;
+    real compute_viscosity_coefficient (const std::array<real,nstate> &primitive_soln) const;
 
     /** Nondimensionalized viscosity coefficient, mu*
      *  Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.14.16)
@@ -88,53 +88,53 @@ public:
      * * Reference: Sutherland, W. (1893), "The viscosity of gases and molecular force", Philosophical Magazine, S. 5, 36, pp. 507-531 (1893)
      * * Values: https://www.cfd-online.com/Wiki/Sutherland%27s_law
      */
-    double compute_viscosity_coefficient_sutherlands_law (const std::array<double,nstate> &primitive_soln) const;
+    real compute_viscosity_coefficient_sutherlands_law (const std::array<real,nstate> &primitive_soln) const;
 
     /** Scaled nondimensionalized viscosity coefficient, hat{mu*}, given nondimensionalized viscosity coefficient
      *  Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.14.14)
      */
-    double scale_viscosity_coefficient (const double viscosity_coefficient) const;
+    real scale_viscosity_coefficient (const real viscosity_coefficient) const;
 
     /** Scaled nondimensionalized viscosity coefficient, hat{mu*} 
      *  Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.14.14)
      */
-    double compute_scaled_viscosity_coefficient (const std::array<double,nstate> &primitive_soln) const;
+    real compute_scaled_viscosity_coefficient (const std::array<real,nstate> &primitive_soln) const;
 
     /** Scaled nondimensionalized heat conductivity, hat{kappa*}, given scaled nondimensionalized viscosity coefficient and Prandtl number
      *  Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.14.13)
      */
-    double compute_scaled_heat_conductivity_given_scaled_viscosity_coefficient_and_prandtl_number (
-        const double scaled_viscosity_coefficient, 
-        const double prandtl_number_input) const;
+    real compute_scaled_heat_conductivity_given_scaled_viscosity_coefficient_and_prandtl_number (
+        const real scaled_viscosity_coefficient, 
+        const real prandtl_number_input) const;
 
     /** Scaled nondimensionalized heat conductivity, hat{kappa*}
      *  Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.14.13)
      */
-    double compute_scaled_heat_conductivity (const std::array<double,nstate> &primitive_soln) const;
+    real compute_scaled_heat_conductivity (const std::array<real,nstate> &primitive_soln) const;
 
     /** Nondimensionalized heat flux, q*
      *  Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.14.13)
      */
-    dealii::Tensor<1,dim,double> compute_heat_flux (
-        const std::array<double,nstate> &primitive_soln,
-        const std::array<dealii::Tensor<1,dim,double>,nstate> &primitive_soln_gradient) const;
+    dealii::Tensor<1,dim,real> compute_heat_flux (
+        const std::array<real,nstate> &primitive_soln,
+        const std::array<dealii::Tensor<1,dim,real>,nstate> &primitive_soln_gradient) const;
 
     /** Nondimensionalized heat flux, q*, given the scaled heat conductivity and temperature gradient
      *  Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.14.13)
      */
-    dealii::Tensor<1,dim,double> compute_heat_flux_given_scaled_heat_conductivity_and_temperature_gradient (
-        const double scaled_heat_conductivity,
-        const dealii::Tensor<1,dim,double> &temperature_gradient) const;
+    dealii::Tensor<1,dim,real> compute_heat_flux_given_scaled_heat_conductivity_and_temperature_gradient (
+        const real scaled_heat_conductivity,
+        const dealii::Tensor<1,dim,real> &temperature_gradient) const;
 
     /** Extract gradient of velocities */
-    dealii::Tensor<2,dim,double> extract_velocities_gradient_from_primitive_solution_gradient (
-        const std::array<dealii::Tensor<1,dim,double>,nstate> &primitive_soln_gradient) const;
+    dealii::Tensor<2,dim,real> extract_velocities_gradient_from_primitive_solution_gradient (
+        const std::array<dealii::Tensor<1,dim,real>,nstate> &primitive_soln_gradient) const;
 
     /** Nondimensionalized strain rate tensor, S*
      *  Reference: Masatsuka 2018 "I do like CFD", p.148, extracted from eq.(4.14.12)
      */
-    dealii::Tensor<2,dim,double> compute_strain_rate_tensor (
-        const dealii::Tensor<2,dim,double> &vel_gradient) const;
+    dealii::Tensor<2,dim,real> compute_strain_rate_tensor (
+        const dealii::Tensor<2,dim,real> &vel_gradient) const;
 
     /// Evaluate the square of the strain-rate tensor magnitude (i.e. double dot product) from conservative variables and gradient of conservative variables
     real compute_strain_rate_tensor_magnitude_sqr (
@@ -144,16 +144,16 @@ public:
     /** Nondimensionalized viscous stress tensor, tau*
      *  Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.14.12)
      */
-    dealii::Tensor<2,dim,double> compute_viscous_stress_tensor_via_scaled_viscosity_and_strain_rate_tensor (
-        const double scaled_viscosity_coefficient,
-        const dealii::Tensor<2,dim,double> &strain_rate_tensor) const;
+    dealii::Tensor<2,dim,real> compute_viscous_stress_tensor_via_scaled_viscosity_and_strain_rate_tensor (
+        const real scaled_viscosity_coefficient,
+        const dealii::Tensor<2,dim,real> &strain_rate_tensor) const;
 
     /** Nondimensionalized viscous stress tensor, tau*
      *  Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.14.12)
      */
-    dealii::Tensor<2,dim,double> compute_viscous_stress_tensor (
-        const std::array<double,nstate> &primitive_soln,
-        const std::array<dealii::Tensor<1,dim,double>,nstate> &primitive_soln_gradient) const;
+    dealii::Tensor<2,dim,real> compute_viscous_stress_tensor (
+        const std::array<real,nstate> &primitive_soln,
+        const std::array<dealii::Tensor<1,dim,real>,nstate> &primitive_soln_gradient) const;
 
     /** Nondimensionalized viscous flux (i.e. dissipative flux)
      *  Reference: Masatsuka 2018 "I do like CFD", p.142, eq.(4.12.1-4.12.4)
@@ -167,20 +167,20 @@ public:
      *  via given velocities, viscous stress tensor, and heat flux. 
      *  Reference: Masatsuka 2018 "I do like CFD", p.142, eq.(4.12.1-4.12.4)
      */
-    std::array<dealii::Tensor<1,dim,double>,nstate> 
+    std::array<dealii::Tensor<1,dim,real>,nstate> 
     dissipative_flux_given_velocities_viscous_stress_tensor_and_heat_flux (
-        const dealii::Tensor<1,dim,double> &vel,
-        const dealii::Tensor<2,dim,double> &viscous_stress_tensor,
-        const dealii::Tensor<1,dim,double> &heat_flux) const;
+        const dealii::Tensor<1,dim,real> &vel,
+        const dealii::Tensor<2,dim,real> &viscous_stress_tensor,
+        const dealii::Tensor<1,dim,real> &heat_flux) const;
 
 protected:
 
     /** Nondimensionalized viscous flux (i.e. dissipative flux)
      *  Reference: Masatsuka 2018 "I do like CFD", p.142, eq.(4.12.1-4.12.4)
      */
-    std::array<dealii::Tensor<1,dim,double>,nstate> dissipative_flux_templated (
-        const std::array<double,nstate> &conservative_soln,
-        const std::array<dealii::Tensor<1,dim,double>,nstate> &solution_gradient) const;
+    std::array<dealii::Tensor<1,dim,real>,nstate> dissipative_flux_templated (
+        const std::array<real,nstate> &conservative_soln,
+        const std::array<dealii::Tensor<1,dim,real>,nstate> &solution_gradient) const;
 
     /** No-slip wall boundary conditions
      *  * Given by equations 460-461 of the following paper:

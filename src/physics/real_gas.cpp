@@ -524,11 +524,10 @@ void RealGas<dim,nspecies,nstate,real>
 /* MAIN FUNCTIONS */
 // Algorithm 1 (f_M1): Compute mixture density
 template <int dim, int nspecies, int nstate, typename real>
-template<typename real2>
-inline real2 RealGas<dim,nspecies,nstate,real>
-:: compute_mixture_density ( const std::array<real2,nstate> &conservative_soln ) const
+inline real RealGas<dim,nspecies,nstate,real>
+:: compute_mixture_density ( const std::array<real,nstate> &conservative_soln ) const
 {
-    const real2 mixture_density = conservative_soln[0];
+    const real mixture_density = conservative_soln[0];
 
     return mixture_density;
 }
@@ -560,11 +559,10 @@ inline real RealGas<dim,nspecies,nstate,real>
 }
 
 template <int dim, int nspecies, int nstate, typename real>
-template<typename real2>
-inline dealii::Tensor<1,dim,real2> RealGas<dim,nspecies,nstate,real>
-::extract_velocities_from_primitive ( const std::array<real2,nstate> &primitive_soln ) const
+inline dealii::Tensor<1,dim,real> RealGas<dim,nspecies,nstate,real>
+::extract_velocities_from_primitive ( const std::array<real,nstate> &primitive_soln ) const
 {
-    dealii::Tensor<1,dim,real2> velocities;
+    dealii::Tensor<1,dim,real> velocities;
     for (int d=0; d<dim; d++) { velocities[d] = primitive_soln[1+d]; }
     return velocities;
 }

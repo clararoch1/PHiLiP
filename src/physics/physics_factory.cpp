@@ -154,6 +154,7 @@ PhysicsFactory<dim,nspecies,nstate,real>
         }
     }  else if (pde_type == PDE_enum::navier_stokes_real_gas) {
         if constexpr (nstate==dim+nspecies+1) {
+            // return std::make_shared < RealGas<dim,nspecies,nstate,real> > (parameters_input);
             return std::make_shared < NavierStokes_RealGas<dim,nspecies,nstate,real> > (
                 parameters_input,
                 parameters_input->navier_stokes_param.prandtl_number,
