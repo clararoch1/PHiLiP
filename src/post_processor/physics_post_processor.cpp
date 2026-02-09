@@ -22,6 +22,9 @@ std::unique_ptr< dealii::DataPostprocessor<dim> > PostprocessorFactory<dim,nspec
     if (pde_type == PDE_enum::real_gas) {
             return std::make_unique< PhysicsPostprocessor<dim,nspecies,dim+nspecies+1> >(parameters_input);
     }
+    else if (pde_type == PDE_enum::navier_stokes_real_gas) {
+            return std::make_unique< PhysicsPostprocessor<dim,nspecies,dim+nspecies+1> >(parameters_input);
+    }
     #if PHILIP_SPECIES==1
     else if (pde_type == PDE_enum::advection && nspecies == 1) {
         return std::make_unique< PhysicsPostprocessor<dim,nspecies,1> >(parameters_input);

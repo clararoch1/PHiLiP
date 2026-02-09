@@ -11,7 +11,7 @@ set dimension = 1
 # Chemical species
 set species = 2
 set test_type = multi_species_vortex_advection
-set pde_type = real_gas
+set pde_type = navier_stokes_real_gas
 set chemistry_input_file = ../../chemistry_files/H2_O2.kinetics
 
 # DG formulation
@@ -47,7 +47,7 @@ end
 
 subsection flow_solver
   set flow_case_type = multi_species_vortex_advection
-  set poly_degree = 5
+  set poly_degree = 2
   # 34.614724700315755 is 1 second in physical time for m_inf = 0.1
   # Final time is set to 34.614724700315755 * m_inf for one full cycle 
   # ie. final solution = initial condition
