@@ -235,7 +235,8 @@ public:
         mhd,
         navier_stokes,
         physics_model,
-        real_gas
+        real_gas,
+        navier_stokes_real_gas
     };
     /// Store the PDE type to be solved
     PartialDifferentialEquation pde_type;

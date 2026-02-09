@@ -36,6 +36,7 @@ public:
     ~RealGas() {};
 
     const double gam_ref; ///< reference gamma
+    const double gamm1; ///< reference gamma - 1
     const double mach_ref; ///< reference mach number (Farfield Mach number)
     const double mach_ref_sqr; ///< reference mach number (Farfield Mach number squared)
     const two_point_num_flux_enum two_point_num_flux_type; ///< Two point numerical flux type (for split form)

@@ -19,6 +19,7 @@ RealGas<dim,nspecies,nstate,real>::RealGas (
     const bool                                                has_nonzero_physical_source)
     : PhysicsBase<dim,nspecies,nstate,real>(parameters_input, has_nonzero_diffusion,has_nonzero_physical_source,manufactured_solution_function)
     , gam_ref(parameters_input->euler_param.gamma_gas)
+    , gamm1(gam_ref-1.0)
     , mach_ref(parameters_input->euler_param.mach_inf)
     , mach_ref_sqr(mach_ref*mach_ref)
     , two_point_num_flux_type(parameters_input->two_point_num_flux_type)

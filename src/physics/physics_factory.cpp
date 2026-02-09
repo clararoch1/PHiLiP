@@ -18,6 +18,7 @@
 #include "navier_stokes.h"
 #include "physics_model.h"
 #include "real_gas.h"
+#include "navier_stokes_real_gas.h"
 
 namespace PHiLiP {
 namespace Physics {
@@ -151,7 +152,21 @@ PhysicsFactory<dim,nspecies,nstate,real>
         if constexpr (nstate==dim+nspecies+1) {
             return std::make_shared < RealGas<dim,nspecies,nstate,real> > (parameters_input);
         }
-    }  else {
+    }  else if (pde_type == PDE_enum::navier_stokes_real_gas) {
+        if constexpr (nstate==dim+nspecies+1) {
+            return std::make_shared < NavierStokes_RealGas<dim,nspecies,nstate,real> > (
+                parameters_input,
+                parameters_input->navier_stokes_param.prandtl_number,
+                parameters_input->navier_stokes_param.reynolds_number_inf,
+                parameters_input->navier_stokes_param.use_constant_viscosity,
+                parameters_input->navier_stokes_param.nondimensionalized_constant_viscosity,
+                parameters_input->navier_stokes_param.temperature_inf,
+                parameters_input->navier_stokes_param.nondimensionalized_isothermal_wall_temperature,
+                parameters_input->navier_stokes_param.thermal_boundary_condition_type
+            );
+        }
+    }  
+     else {
         // prevent warnings for dim=3,nstate=4, etc.
         (void) diffusion_tensor;
         (void) advection_vector;

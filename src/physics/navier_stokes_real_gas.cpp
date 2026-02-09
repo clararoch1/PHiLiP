@@ -47,38 +47,48 @@ std::array<dealii::Tensor<1,dim,double>,nstate> NavierStokes_RealGas<dim,nspecie
 
     // get primitive solution
     const std::array<double,nstate> primitive_soln = this->template convert_conservative_to_primitive(conservative_soln); // from Euler
+
     // extract from primitive solution
     const double density = primitive_soln[0];
     const dealii::Tensor<1,dim,double> vel = this->template extract_velocities_from_primitive(primitive_soln); // from Euler
 
-    // density gradient
+     // mixture density gradient
     for (int d=0; d<dim; d++) {
         primitive_soln_gradient[0][d] = conservative_soln_gradient[0][d];
     }
+
     // velocities gradient
     for (int d1=0; d1<dim; d1++) {
         for (int d2=0; d2<dim; d2++) {
             primitive_soln_gradient[1+d1][d2] = (conservative_soln_gradient[1+d1][d2] - vel[d1]*conservative_soln_gradient[0][d2])/density;
         }        
     }
-    // pressure gradient
-    // -- formulation 1:
-    // const double vel2 = this->template compute_velocity_squared(vel); // from Euler
-    // for (int d1=0; d1<dim; d1++) {
-    //     primitive_soln_gradient[nstate-1][d1] = conservative_soln_gradient[nstate-1][d1] - 0.5*vel2*conservative_soln_gradient[0][d1];
-    //     for (int d2=0; d2<dim; d2++) {
-    //         primitive_soln_gradient[nstate-1][d1] -= conservative_soln[1+d2]*primitive_soln_gradient[1+d2][d1];
-    //     }
-    //     primitive_soln_gradient[nstate-1][d1] *= this->gamm1;
-    // }
-    // -- formulation 2 (equivalent to formulation 1):
-    for (int d1=0; d1<dim; d1++) {
-        primitive_soln_gradient[nstate-1][d1] = conservative_soln_gradient[nstate-1][d1];
+
+    // mass fraction gradient 
+    for (int d1=dim+2; d1<dim+2+(nspecies-1); d1++) {
         for (int d2=0; d2<dim; d2++) {
-            primitive_soln_gradient[nstate-1][d1] -= 0.5*(primitive_soln[1+d2]*conservative_soln_gradient[1+d2][d1]  
+            primitive_soln_gradient[d1][d2] = (conservative_soln_gradient[d1][d2] - primitive_soln[d1]*conservative_soln_gradient[0][d2])/density;
+        }
+    }
+
+//     // pressure gradient
+//     // -- formulation 1:
+//     // const double vel2 = this->template compute_velocity_squared(vel); // from Euler
+//     // for (int d1=0; d1<dim; d1++) {
+//     //     primitive_soln_gradient[nstate-1][d1] = conservative_soln_gradient[nstate-1][d1] - 0.5*vel2*conservative_soln_gradient[0][d1];
+//     //     for (int d2=0; d2<dim; d2++) {
+//     //         primitive_soln_gradient[nstate-1][d1] -= conservative_soln[1+d2]*primitive_soln_gradient[1+d2][d1];
+//     //     }
+//     //     primitive_soln_gradient[nstate-1][d1] *= this->gamm1;
+//     // }
+//     // -- formulation 2 (equivalent to formulation 1):
+    for (int d1=0; d1<dim; d1++) {
+        primitive_soln_gradient[dim+1][d1] = conservative_soln_gradient[dim+1][d1];
+        for (int d2=0; d2<dim; d2++) {
+            primitive_soln_gradient[dim+1][d1] -= 0.5*(primitive_soln[1+d2]*conservative_soln_gradient[1+d2][d1]  
                                                            + conservative_soln[1+d2]*primitive_soln_gradient[1+d2][d1]);
         }
-        // primitive_soln_gradient[nstate-1][d1] *= this->gamm1;
+        primitive_soln_gradient[dim+1][d1] *= this->gamm1;
     }
     return primitive_soln_gradient;
 }
@@ -89,13 +99,12 @@ dealii::Tensor<1,dim,double> NavierStokes_RealGas<dim,nspecies,nstate,real>
     const std::array<double,nstate> &primitive_soln,
     const std::array<dealii::Tensor<1,dim,double>,nstate> &primitive_soln_gradient) const
 {
-    // const double density = primitive_soln[0];
-    // const double temperature = this->template compute_temperature(primitive_soln); // from Euler
+    const double density = primitive_soln[0];
+    const double temperature = this->template compute_temperature(primitive_soln); // from Euler
 
     dealii::Tensor<1,dim,double> temperature_gradient;
     for (int d=0; d<dim; d++) {
-        // temperature_gradient[d] = (this->gam*this->mach_inf_sqr*primitive_soln_gradient[nstate-1][d] - temperature*primitive_soln_gradient[0][d])/density;
-        temperature_gradient[d]=0.0*primitive_soln[d]*primitive_soln_gradient[nstate-1][d];
+        temperature_gradient[d] = (this->gam_ref*this->mach_ref_sqr*primitive_soln_gradient[dim+1][d] - temperature*primitive_soln_gradient[0][d])/density;
     }
     return temperature_gradient;
 }
@@ -165,10 +174,9 @@ inline double NavierStokes_RealGas<dim,nspecies,nstate,real>
     /* Scaled nondimensionalized heat conductivity, $\hat{\kappa}^{*}$, given the scaled viscosity coefficient
      * Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.14.13)
      */
-    // const double scaled_heat_conductivity = scaled_viscosity_coefficient/(this->gamm1*this->mach_inf_sqr*prandtl_number_input);
+    const double scaled_heat_conductivity = scaled_viscosity_coefficient/(this->gamm1*this->mach_ref_sqr*prandtl_number_input);
     
-    // return scaled_heat_conductivity;
-    return 0.0*scaled_viscosity_coefficient*prandtl_number_input;
+    return scaled_heat_conductivity;
 }
 
 template <int dim, int nspecies, int nstate, typename real>
@@ -395,11 +403,11 @@ std::array<dealii::Tensor<1,dim,double>,nstate> NavierStokes_RealGas<dim,nspecie
             viscous_flux[1+stress_dim][flux_dim] = -viscous_stress_tensor[stress_dim][flux_dim];
         }
         // Energy equation
-        viscous_flux[nstate-1][flux_dim] = 0.0;
+        viscous_flux[dim+1][flux_dim] = 0.0;
         for (int stress_dim=0; stress_dim<dim; ++stress_dim){
-           viscous_flux[nstate-1][flux_dim] -= vel[stress_dim]*viscous_stress_tensor[flux_dim][stress_dim];
+           viscous_flux[dim+1][flux_dim] -= vel[stress_dim]*viscous_stress_tensor[flux_dim][stress_dim];
         }
-        viscous_flux[nstate-1][flux_dim] += heat_flux[flux_dim];
+        viscous_flux[dim+1][flux_dim] += heat_flux[flux_dim];
     }
     return viscous_flux;
 }
@@ -427,10 +435,10 @@ void NavierStokes_RealGas<dim,nspecies,nstate,real>
     // Associated thermal boundary condition
     if(thermal_boundary_condition_type == thermal_boundary_condition_enum::isothermal) { 
         // isothermal boundary
-        primitive_boundary_values[nstate-1] = this->compute_pressure_from_density_temperature(primitive_boundary_values[0], isothermal_wall_temperature,soln_int);
+        primitive_boundary_values[dim+1] = this->compute_pressure_from_density_temperature(primitive_boundary_values[0], isothermal_wall_temperature,soln_int);
     } else if(thermal_boundary_condition_type == thermal_boundary_condition_enum::adiabatic) {
         // adiabatic boundary
-        primitive_boundary_values[nstate-1] = primitive_interior_values[nstate-1];
+        primitive_boundary_values[dim+1] = primitive_interior_values[dim+1];
     }
     
     // No-slip boundary condition on velocity

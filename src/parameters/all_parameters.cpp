@@ -281,7 +281,8 @@ void AllParameters::declare_parameters (dealii::ParameterHandler &prm)
                       " mhd | "
                       " navier_stokes | "
                       " physics_model | "
-                      " real_gas |"),
+                      " real_gas |"
+                      " navier_stokes_real_gas"),
                       "The PDE we want to solve. "
                       "Choices are " 
                       " <advection | " 
@@ -295,7 +296,8 @@ void AllParameters::declare_parameters (dealii::ParameterHandler &prm)
                       "  mhd | "
                       "  navier_stokes | "
                       "  physics_model | "
-                      "  real_gas>.");
+                      "  real_gas |"
+                      "  navier_stokes_real_gas>.");
 
     prm.declare_entry("model_type", "large_eddy_simulation",
                       dealii::Patterns::Selection(
@@ -667,6 +669,9 @@ const std::string test_string = prm.get("test_type");
         }
     } else if (pde_string == "real_gas") {
         pde_type = real_gas;
+        nstate = dimension+species+1;
+    } else if (pde_string == "navier_stokes_real_gas") {
+        pde_type = navier_stokes_real_gas;
         nstate = dimension+species+1;
     }
     
