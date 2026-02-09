@@ -197,11 +197,11 @@ public:
 protected:
     // Algorithm 11 (f_M11): Compute species specific heat at constant pressure from temperature
     // Modified by Shruthi
-    std::array<real,nspecies> compute_species_specific_molar_Cp ( const real temperature ) const;
+    std::array<real,nspecies> compute_species_specific_Cp ( const real temperature ) const;
 
     // Algorithm 12 (f_M12): Compute species specific heat at constant volume from temperature
     // Modified by Shruthi
-    std::array<real,nspecies>compute_species_specific_molar_Cv ( const real temperature ) const;
+    std::array<real,nspecies>compute_species_specific_Cv ( const real temperature ) const;
 
     // Algorithm 13 (f_M13): Compute species specific enthalpy from temperature
     // Modified by Shruthi
@@ -274,6 +274,7 @@ protected:
     std::array<std::string,nspecies> species_name; // Species name
     std::array<double,nspecies> species_weight; // Species molecular weight [kg/mol]
     std::array<double,nspecies> species_enthalpy_offset; // Species enthalpy offset [J/mol]
+    std::array<real,nspecies> Rs; // Species gas constant
 };
 
 } // Physics namespace
