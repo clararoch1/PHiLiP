@@ -89,6 +89,29 @@ public:
      * * Values: https://www.cfd-online.com/Wiki/Sutherland%27s_law
      */
     real compute_viscosity_coefficient_sutherlands_law (const std::array<real,nstate> &primitive_soln) const;
+    
+    /** Mole fractions x_k of each species. Returns all mole fractions.
+     */
+    std::array<real,nspecies>
+    compute_mole_fractions(const std::array<real, nstate> &primitive_soln) const;
+
+    /** Species viscosity coefficients of all species.
+     */
+    std::array<real, nspecies>
+    compute_species_viscosity_coefficients(const std::array<real, nstate> &primitive_soln) const;
+
+    /** Species dependent phi term in Wilke's mixing rule.
+     *  Reference: Wilke (1950), "A viscosity equation for gas mixtures", J. Chem. Phys., vol 18, no 4, pp 517-519
+     */
+    real compute_phi_kj(
+        const int k, 
+        const int j, 
+        const std::array<real, nspecies> &species_viscosity_coefficients) const;
+    
+    /** Mixture viscosity coefficient from Wilke's mixing rule.
+     *  Reference: Wilke (1950), "A viscosity equation for gas mixtures", J. Chem. Phys., vol 18, no 4, pp 517-519
+     */
+    real compute_mixture_viscosity_coefficient_wilkes_rule(const std::array<real, nstate> &primitive_soln) const;
 
     /** Scaled nondimensionalized viscosity coefficient, hat{mu*}, given nondimensionalized viscosity coefficient
      *  Reference: Masatsuka 2018 "I do like CFD", p.148, eq.(4.14.14)

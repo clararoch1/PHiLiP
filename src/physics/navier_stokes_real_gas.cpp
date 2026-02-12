@@ -115,12 +115,12 @@ template <int dim, int nspecies, int nstate, typename real>
 inline real NavierStokes_RealGas<dim,nspecies,nstate,real>
 ::compute_viscosity_coefficient (const std::array<real,nstate> &primitive_soln) const
 {   
-    // Use either Sutherland's law or constant viscosity
+    // Use either Wile's mixture law or constant viscosity
     real viscosity_coefficient;
     if(use_constant_viscosity){
         viscosity_coefficient = 1.0*constant_viscosity;
     } else {
-        viscosity_coefficient = compute_viscosity_coefficient_sutherlands_law(primitive_soln);
+        viscosity_coefficient = compute_mixture_viscosity_coefficient_wilkes_rule(primitive_soln);
     }
 
     return viscosity_coefficient;
@@ -142,6 +142,89 @@ inline real NavierStokes_RealGas<dim,nspecies,nstate,real>
     const real viscosity_coefficient = ((1.0 + temperature_ratio)/(temperature + temperature_ratio))*pow(temperature,1.5);
     
     return viscosity_coefficient;
+}
+  
+template <int dim, int nspecies, int nstate, typename real>
+std::array<real, nspecies> NavierStokes_RealGas<dim, nspecies, nstate, real>
+    ::compute_mole_fractions(const std::array<real, nstate> &primitive_soln) const
+{
+    /* Added by Clara
+     * Computes the mole fraction of each species and stores it in an array.
+    */
+
+    std::array<real, nspecies> mass_fractions;
+    real sum_mass_fractions = 0.0;
+    for (int d = 0; d < nspecies-1; d++) {
+        mass_fractions[d] = primitive_soln[dim + 2 + d];
+        sum_mass_fractions += mass_fractions[d];
+    }
+    mass_fractions[nspecies-1] = 1.0 - sum_mass_fractions;
+
+    real den = 0.0;
+    for (int d = 0; d < nspecies; d++) {
+        den += mass_fractions[d] / this->species_weight[d];
+    }
+
+    std::array<real, nspecies> mole_fractions;
+    for (int d = 0; d < nspecies; d++) {
+        mole_fractions[d] = (mass_fractions[d] / this->species_weight[d]) / den;
+    }
+
+    return mole_fractions;
+}
+
+template <int dim, int nspecies, int nstate, typename real>
+std::array<real, nspecies> NavierStokes_RealGas<dim, nspecies, nstate, real>
+    ::compute_species_viscosity_coefficients(const std::array<real, nstate> &primitive_soln) const
+{
+    std::array<real, nspecies> species_viscosity_coefficients;
+    for (int d = 0; d < nspecies; d++) {
+        species_viscosity_coefficients[d] = compute_viscosity_coefficient_sutherlands_law(primitive_soln);
+    }
+    return species_viscosity_coefficients;
+}
+
+template <int dim, int nspecies, int nstate, typename real>
+inline real NavierStokes_RealGas<dim, nspecies, nstate, real>
+    ::compute_phi_kj(const int k, const int j, const std::array<real, nspecies> &species_viscosity_coefficients) const
+{
+    /* Phi term used in Wilke's rule.
+     * Reference:
+    */
+    const real viscosity_coefficient_species_k = species_viscosity_coefficients[k];
+    const real viscosity_coefficient_species_j = species_viscosity_coefficients[j];
+
+    const real num = 1.0 + sqrt(viscosity_coefficient_species_k / viscosity_coefficient_species_j) * pow(this->species_weight[k] / this->species_weight[j], 0.25);
+    const real num_sqr = num * num;
+
+    const real den = sqrt(8) * sqrt(1 + this->species_weight[k] / this->species_weight[j]);
+
+    const real phi_kj = num_sqr / den;
+
+    return phi_kj;
+}
+
+template <int dim, int nspecies, int nstate, typename real>
+inline real NavierStokes_RealGas<dim, nspecies, nstate, real>
+    ::compute_mixture_viscosity_coefficient_wilkes_rule(const std::array<real, nstate> &primitive_soln) const
+{
+    const std::array<real, nspecies> mole_fractions = compute_mole_fractions(primitive_soln);
+    const std::array<real, nspecies> species_viscosity_coefficients = compute_species_viscosity_coefficients(primitive_soln);
+
+    real mixture_viscosity_coefficient = 0.0;
+
+    for (int d1 = 0; d1 < nspecies; d1++) {
+        real sum = 0.0;
+        for (int d2 = 0; d2 < nspecies; d2++) {
+            if (d1 == d2) continue;
+            sum += mole_fractions[d2] * compute_phi_kj(d1, d2, species_viscosity_coefficients);
+        }
+
+        const real den = 1.0 + (1 / mole_fractions[d1]) * sum;
+               
+        mixture_viscosity_coefficient += species_viscosity_coefficients[d1] / den;
+    }
+    return mixture_viscosity_coefficient;
 }
 
 template <int dim, int nspecies, int nstate, typename real>
