@@ -157,7 +157,7 @@ dealii::Tensor<1,dim,real> NavierStokes_RealGas<dim, nspecies, nstate, real>
             e_s_gradYs += e_s[s] * grad_Y[s][d];
         }
 
-        temperature_gradient[d] = (grad_E - vel_gradvel - e_s_gradYs) / Cv_mix;
+        temperature_gradient[d] = (grad_E - vel_gradvel - e_s_gradYs) / Cv_mix * this->gam_ref * this->mach_ref_sqr;
 
     }
 

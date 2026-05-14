@@ -43,6 +43,7 @@ end
 
 subsection navier_stokes
   set reynolds_number_inf = 1000.0
+  set use_constant_viscosity = true
 end 
 
 subsection flow_solver
